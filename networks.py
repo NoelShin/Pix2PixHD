@@ -125,9 +125,10 @@ class Discriminator(nn.Module):
         print(self)
 
     def forward(self, x):
-        result =[]
+        result = []
         for i in range(self.opt.n_D):
             result.append(getattr(self, 'Scale_{}'.format(i))(x))
+            x = nn.AvgPool2d(kernel_size=3, padding=1, stride=2)(x)
 
         return result
 
