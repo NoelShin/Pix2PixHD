@@ -8,6 +8,7 @@ import numpy as np
 
 from PIL import Image
 
+
 def configure(opt):
     torch.cuda.device(opt.gpu_ids)
 
@@ -32,6 +33,14 @@ def configure(opt):
     dataset_name = opt.dataset_name
     model_name = model_namer(height=opt.image_height)
     make_dir(dataset_name, model_name, type='checkpoints')
+
+    if opt.is_train:
+        opt.image_dir = os.path.join('./checkpoints', dataset_name, 'Image/Training', model_name)
+
+    elif not opt.is_train:
+        opt.image_dir = os.path.join('./checkpoints', dataset_name, 'Image/Test', model_name)
+
+    opt.model_dir = os.path.join('./checkpoints', dataset_name, 'Model', model_name)
     log_path = os.path.join('./checkpoints/', dataset_name, 'Model', model_name + '_opt.txt')
 
     if os.path.isfile(log_path):
@@ -41,6 +50,12 @@ def configure(opt):
             pass
         else:
             raise NotImplementedError("Please check {}".format(log_path))
+
+    if opt.debug:
+        opt.display_freq = 1
+        opt.report_freq = 1
+        opt.save_freq = 1
+
 
     args = vars(opt)
     with open(log_path, 'wt') as log:
@@ -56,7 +71,7 @@ def configure(opt):
 
 def model_namer(**elements):
     name = ''
-    for k, v in elements.items():
+    for k, v in sorted(elements.items()):
         name += str(k) + '_' + str(v)
     return name
 
@@ -122,13 +137,6 @@ def get_pad_layer(type):
     return layer
 
 
-
-
-
-
-
-
-
 class Manager(object):
     def __init__(self, opt):
         self.opt = opt
@@ -161,26 +169,28 @@ class Manager(object):
         pil_image = Image.fromarray(np_image)
         pil_image.save(path, self.opt.image_mode)
 
-    def save(self, package, path, image=False, model=False):
+    def save(self, package, image=False, model=False):
         if image:
-            self.save_image(package['target_tensor'], path)
-            self.save_image(package['generated_tensor'], path)
+            path_real = self.opt.image_dir + package['current_step'] + '_' + 'real'
+            path_fake = self.opt.image_dir + package['current_step'] + '_' + 'fake'
+            self.save_image(package['target_tensor'], path_real)
+            self.save_image(package['generated_tensor'], path_fake)
 
         elif model:
-            torch.save(package['G_state_dict'])
-            torch.save(package['D_state_dict'])
+            path_D = self.opt.model_dir + package['current_step'] + '_' + 'D.pt'
+            path_G = self.opt.model_dir + package['current_step'] + '_' + 'G.pt'
+            torch.save(package['D_state_dict'], path_D)
+            torch.save(package['G_state_dict'], path_G)
 
-    def __call__(self, current_step, package):
-        if current_step % self.opt.display_freq == 0:
-            path =
-            self.save(package, path, pathimage=True)
+    def __call__(self, package):
+        if package['current_step'] % self.opt.display_freq == 0:
+            self.save(package, image=True)
 
-        if current_step % self.opt.report_freq == 0:
-            self.report_loss()
+        if package['current_step'] % self.opt.report_freq == 0:
+            self.report_loss(package)
 
-        if current_step % self.opt.save_freq == 0:
-            path =
-            self.save(package, path, model=True)
+        if package['current_step'] % self.opt.save_freq == 0:
+            self.save(package, model=True)
 
 
 def update_lr(old_lr, n_epoch_decay, D_optim, G_optim):
