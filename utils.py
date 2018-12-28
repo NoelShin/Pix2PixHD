@@ -171,14 +171,14 @@ class Manager(object):
 
     def save(self, package, image=False, model=False):
         if image:
-            path_real = self.opt.image_dir + package['current_step'] + '_' + 'real'
-            path_fake = self.opt.image_dir + package['current_step'] + '_' + 'fake'
+            path_real = os.path.join(self.opt.image_dir, str(package['current_step']) + '_' + 'real')
+            path_fake = os.path.join(self.opt.image_dir, str(package['current_step']) + '_' + 'fake')
             self.save_image(package['target_tensor'], path_real)
             self.save_image(package['generated_tensor'], path_fake)
 
         elif model:
-            path_D = self.opt.model_dir + package['current_step'] + '_' + 'D.pt'
-            path_G = self.opt.model_dir + package['current_step'] + '_' + 'G.pt'
+            path_D = os.path.join(self.opt.model_dir, str(package['current_step']) + '_' + 'D.pt')
+            path_G = os.path.join(self.opt.model_dir, str(package['current_step']) + '_' + 'G.pt')
             torch.save(package['D_state_dict'], path_D)
             torch.save(package['G_state_dict'], path_G)
 
@@ -216,5 +216,4 @@ def weights_init(module):
     elif classname.find('BatchNorm2d') != -1:
         module.weight.detach().normal(1.0, 0.02)
         module.bias.detach().fill_(0.0)
-
-
+        
