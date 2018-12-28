@@ -185,6 +185,9 @@ class Loss(object):
             if opt.VGG_loss:
                 self.VGGNet = VGG19()
 
+                if opt.gpu_ids != -1:
+                    self.VGGNet = self.VGGNet.cuda(opt.gpu_ids)
+
     def __call__(self, D, G, input, target):
         loss_D = 0
         loss_G = 0
@@ -197,6 +200,11 @@ class Loss(object):
         for i in range(self.opt.n_D):
             real_grid = get_grid(real_features[i][-1], is_real=True)
             fake_grid = get_grid(fake_features[i][-1], is_real=False)  # it doesn't need to be fake_score
+
+            if self.opt.gpu_ids != -1:
+                real_grid = real_grid.cuda(self.opt.gpu_ids)
+                fake_grid = fake_grid.cuda(self.opt.gpu_ids)
+
             loss_D += (self.criterion(real_features[i][-1], real_grid) +
                        self.criterion(fake_features[i][-1], fake_grid)) * 0.5
 
@@ -206,6 +214,8 @@ class Loss(object):
             for j in range(len(fake_features[0])):
                 loss_G_FM += self.FMcriterion(fake_features[i][j], real_features[i][j].detach())
             real_grid = get_grid(fake_features[i][-1], is_real=True)
+            if self.opt.gpu_ids != -1:
+                real_grid = real_grid.cuda(self.opt.gpu_ids)
             loss_G += self.criterion(fake_features[i][-1], real_grid)
 
         loss_G += loss_G_FM * (1.0/self.opt.n_D) * self.opt.lambda_FM
@@ -215,7 +225,7 @@ class Loss(object):
             weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]
             real_features, fake_features = self.VGGNet(fake), self.VGGNet(target)
 
-            for i in range(len(real_features[i])):
+            for i in range(len(real_features)):
                 loss_G_VGG_FM += weights[i] * self.FMcriterion(real_features[i].detach(), fake_features[i])
 
             loss_G += loss_G_VGG_FM * self.opt.lambda_FM
