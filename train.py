@@ -6,7 +6,7 @@ if __name__ == '__main__':
     from pipeline import CustomDataset
     from networks import Generator, Discriminator, Loss
     from utils import weights_init, update_lr, Manager
-    from datetime.datetime import now
+    import datetime
 
     opt = TrainOption().parse()
     lr = opt.lr
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     current_step = 0
     total_step = opt.n_epochs * len(data_loader)
-    start_time = now()
+    start_time = datetime.datetime.now()
     for epoch in range(1, opt.n_epochs + 1):
         for _, (input, target) in enumerate(data_loader):
             current_step += 1
@@ -53,9 +53,9 @@ if __name__ == '__main__':
             G_optim.step()
 
             print("let's count")
-            b = now()
+            b = datetime.datetime.now()
             a = G.state_dict()
-            print("state dict time taken: ", now() - b)
+            print("state dict time taken: ", datetime.datetime.now() - b)
 
             package = {'Epoch': epoch,
                        'current_step': current_step,
@@ -67,9 +67,9 @@ if __name__ == '__main__':
                        'target_tensor': target_tensor,
                        'generated_tensor': generated_tensor}
 
-            manager(current_step, package)
+            manager(package)
 
         if epoch > opt.epoch_decay:
             lr = update_lr(lr, opt.n_epochs - opt.epoch_decay, D_optim, G_optim)
 
-    print("Total time taken: ", now() - start_time)
+    print("Total time taken: ", datetime.datetime.now() - start_time)
