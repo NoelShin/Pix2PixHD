@@ -52,11 +52,6 @@ if __name__ == '__main__':
             G_loss.backward()
             G_optim.step()
 
-            print("let's count")
-            b = datetime.datetime.now()
-            a = G.state_dict()
-            print("state dict time taken: ", datetime.datetime.now() - b)
-
             package = {'Epoch': epoch,
                        'current_step': current_step,
                        'total_step': total_step,
@@ -68,6 +63,9 @@ if __name__ == '__main__':
                        'generated_tensor': generated_tensor}
 
             manager(package)
+
+            if opt.debug:
+                break
 
         if epoch > opt.epoch_decay:
             lr = update_lr(lr, opt.n_epochs - opt.epoch_decay, D_optim, G_optim)
