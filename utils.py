@@ -53,9 +53,9 @@ def configure(opt):
 
     if opt.debug:
         opt.display_freq = 1
+        opt.n_epochs = 1
         opt.report_freq = 1
         opt.save_freq = 1
-
 
     args = vars(opt)
     with open(log_path, 'wt') as log:
@@ -216,4 +216,3 @@ def weights_init(module):
     elif classname.find('BatchNorm2d') != -1:
         module.weight.detach().normal(1.0, 0.02)
         module.bias.detach().fill_(0.0)
-        
