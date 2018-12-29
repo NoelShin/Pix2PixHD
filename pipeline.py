@@ -63,11 +63,6 @@ class CustomDataset(torch.utils.data.Dataset):
     def __flip(x):
         return x.transpose(Image.FLIP_LEFT_RIGHT)
 
-    @staticmethod
-    def __scale_height(x, factor=2, method=Image.NEAREST):
-        original_w, original_h = x.size
-        return x.resize((original_w/factor, original_h/factor), method)
-
     def encode_input(self, label_tensor, instance_tensor=None):
         if self.opt.dataset_name == 'Cityscapes':
             max_label_index = 35
