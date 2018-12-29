@@ -20,9 +20,12 @@ if __name__ == '__main__':
     G = Generator(opt).apply(weights_init)
     D = Discriminator(opt).apply(weights_init)
 
+    print("G param", sum(p.numel() for p in G.parameters() if p.requires_grad))
+    print("D param", sum(p.numel() for p in D.parameters() if p.requires_grad))
+
     if USE_CUDA:
-        G = G.cuda()
-        D = D.cuda()
+        G = G.cuda(opt.gpu_ids)
+        D = D.cuda(opt.gpu_ids)
 
     criterion = Loss(opt)
 
@@ -39,9 +42,8 @@ if __name__ == '__main__':
             current_step += 1
 
             if USE_CUDA:
-                input = input.cuda()
-                target = target.cuda()
-
+                input = input.cuda(opt.gpu_ids)
+                target = target.cuda(opt.gpu_ids)
             D_loss, G_loss, target_tensor, generated_tensor = criterion(D, G, input, target)
 
             D_optim.zero_grad()
@@ -60,7 +62,7 @@ if __name__ == '__main__':
                        'D_state_dict': D.state_dict(),
                        'G_state_dict': G.state_dict(),
                        'target_tensor': target_tensor,
-                       'generated_tensor': generated_tensor}
+                       'generated_tensor': generated_tensor.detach()}
 
             manager(package)
 
