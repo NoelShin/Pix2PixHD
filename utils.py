@@ -10,7 +10,6 @@ from PIL import Image
 
 
 def configure(opt):
-    torch.cuda.device(opt.gpu_ids)
 
     opt.n_df = 64
 
@@ -22,7 +21,10 @@ def configure(opt):
             opt.input_ch = 35
 
         opt.format = 'png'
-        opt.half = True
+        if opt.image_height == 512:
+            opt.half = True
+        elif opt.image_height == 1024:
+            opt.half = False
         opt.image_size = (512, 1024) if opt.half else (1024, 2048)
         opt.n_gf = 64 if opt.half else 32
         opt.output_ch = 3
@@ -113,10 +115,10 @@ def get_grid(input, is_real=True):
 
 def get_norm_layer(type):
     if type == 'BatchNorm2d':
-        layer = partial(nn.BatchNorm2d, affine=False)
+        layer = partial(nn.BatchNorm2d, affine=True)
 
     elif type == 'InstanceNorm2d':
-        layer = partial(nn.InstanceNorm2d, affine=True)
+        layer = partial(nn.InstanceNorm2d, affine=False)
 
     return layer
 
@@ -143,9 +145,9 @@ class Manager(object):
 
     @staticmethod
     def report_loss(package):
-        print("Epoch: {} [{:.{prec}}%]  D_loss: {:.{prec}}  G_loss: {:.{prec}}".format(package['Epoch'],
+        print("Epoch: {} [{:.{prec}}%] Current_step: {} D_loss: {:.{prec}}  G_loss: {:.{prec}}".format(package['Epoch'],
                                                 package['current_step']/package['total_step']*100,
-                                                package['D_loss'], package['G_loss'], prec=4))
+                                                package['current_step'], package['D_loss'], package['G_loss'], prec=4))
 
     @staticmethod
     def adjust_dynamic_range(data, drange_in, drange_out):
@@ -171,8 +173,8 @@ class Manager(object):
 
     def save(self, package, image=False, model=False):
         if image:
-            path_real = os.path.join(self.opt.image_dir, str(package['current_step']) + '_' + 'real')
-            path_fake = os.path.join(self.opt.image_dir, str(package['current_step']) + '_' + 'fake')
+            path_real = os.path.join(self.opt.image_dir, str(package['current_step']) + '_' + 'real.png')
+            path_fake = os.path.join(self.opt.image_dir, str(package['current_step']) + '_' + 'fake.png')
             self.save_image(package['target_tensor'], path_real)
             self.save_image(package['generated_tensor'], path_fake)
 
