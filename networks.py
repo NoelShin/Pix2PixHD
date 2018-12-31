@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision
-from utils import get_norm_layer, get_pad_layer, get_grid
+from utils import get_grid, get_norm_layer, get_pad_layer
 
 
 class Generator(nn.Module):
@@ -10,15 +10,18 @@ class Generator(nn.Module):
         self.opt = opt
         self.build_model()
         print(self)
+        print("the number of G parameters", sum(p.numel() for p in self.parameters() if p.requires_grad))
 
     def build_model(self):
         act = nn.ReLU(inplace=True)
+        input_ch = self.opt.input_ch
         n_gf = self.opt.n_gf
         norm = get_norm_layer(self.opt.norm_type)
+        output_ch = self.opt.output_ch
         pad = get_pad_layer(self.opt.padding_type)
 
         model = []
-        model += [pad(3), nn.Conv2d(self.opt.input_ch, n_gf, kernel_size=7, padding=0), act]
+        model += [pad(3), nn.Conv2d(input_ch, n_gf, kernel_size=7, padding=0), act]
 
         for _ in range(self.opt.n_downsample):
             model += [nn.Conv2d(n_gf, 2 * n_gf, kernel_size=3, padding=1, stride=2), norm(2 * n_gf), act]
@@ -32,12 +35,13 @@ class Generator(nn.Module):
                       norm(n_gf//2), act]
             n_gf //= 2
 
-        model += [pad(3), nn.Conv2d(n_gf, self.opt.output_ch, kernel_size=7, padding=0), nn.Tanh()]
+        model += [pad(3), nn.Conv2d(n_gf, output_ch, kernel_size=7, padding=0), nn.Tanh()]
 
         self.model = nn.Sequential(*model)
 
     def forward(self, x):
-        return self.model(x)
+        x = self.model(x)
+        return x
 
 
 class PatchDiscriminator(nn.Module):
@@ -47,18 +51,15 @@ class PatchDiscriminator(nn.Module):
         self.build_model()
 
     def build_model(self):
+        act = nn.LeakyReLU(0.2, inplace=True)
         input_channel = self.opt.input_ch + self.opt.output_ch
         n_df = self.opt.n_df
         norm = get_norm_layer(self.opt.norm_type)
         blocks = []
-        blocks += [[nn.Conv2d(input_channel, n_df, kernel_size=4, padding=1, stride=2),
-                    nn.LeakyReLU(0.2, inplace=True)]]
-        blocks += [[nn.Conv2d(n_df, 2 * n_df, kernel_size=4, padding=1, stride=2),
-                    norm(2 * n_df), nn.LeakyReLU(0.2, inplace=True)]]
-        blocks += [[nn.Conv2d(2 * n_df, 4 * n_df, kernel_size=4, padding=1, stride=2),
-                    norm(4 * n_df), nn.LeakyReLU(0.2, inplace=True)]]
-        blocks += [[nn.Conv2d(4 * n_df, 8 * n_df, kernel_size=4, padding=1, stride=1),
-                    norm(8 * n_df), nn.LeakyReLU(0.2, inplace=True)]]
+        blocks += [[nn.Conv2d(input_channel, n_df, kernel_size=4, padding=1, stride=2), act]]
+        blocks += [[nn.Conv2d(n_df, 2 * n_df, kernel_size=4, padding=1, stride=2), norm(2 * n_df), act]]
+        blocks += [[nn.Conv2d(2 * n_df, 4 * n_df, kernel_size=4, padding=1, stride=2), norm(4 * n_df), act]]
+        blocks += [[nn.Conv2d(4 * n_df, 8 * n_df, kernel_size=4, padding=1, stride=1), norm(8 * n_df), act]]
 
         if not self.opt.GAN_type == 'GAN':
             blocks += [[nn.Conv2d(8 * n_df, 1, kernel_size=4, padding=1, stride=1)]]
@@ -71,10 +72,12 @@ class PatchDiscriminator(nn.Module):
             setattr(self, 'block_{}'.format(i), nn.Sequential(*blocks[i]))
 
     def forward(self, x):
+
         result = [x]
         for i in range(self.n_blocks):
             block = getattr(self, 'block_{}'.format(i))
             result.append(block(result[-1]))
+
         return result[1:]  # except for the input
 
 
@@ -88,12 +91,13 @@ class Discriminator(nn.Module):
 
         elif opt.GAN_type == 'LSGAN':
             for i in range(opt.n_D):
-                setattr(self, 'Scale_{}'.format(i), PatchDiscriminator(self.opt))
+                setattr(self, 'Scale_{}'.format(str(i)), PatchDiscriminator(self.opt))
 
         elif opt.GAN_type == 'WGAN_GP':
             pass
 
         print(self)
+        print("the number of D parameters", sum(p.numel() for p in self.parameters() if p.requires_grad))
 
     def forward(self, x):
         result = []
@@ -165,8 +169,9 @@ class Loss(object):
         loss_G_FM = 0
 
         fake = G(input)
-        fake_features = D(torch.cat([input, fake.detach()], dim=1))
+
         real_features = D(torch.cat([input, target], dim=1))
+        fake_features = D(torch.cat([input, fake.detach()], dim=1))
 
         for i in range(self.opt.n_D):
             real_grid = get_grid(real_features[i][-1], is_real=True)
@@ -195,10 +200,10 @@ class Loss(object):
         if self.opt.VGG_loss:
             loss_G_VGG_FM = 0
             weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]
-            real_features, fake_features = self.VGGNet(target), self.VGGNet(fake)
+            real_features_VGG, fake_features_VGG = self.VGGNet(target), self.VGGNet(fake)
 
-            for i in range(len(real_features)):
-                loss_G_VGG_FM += weights[i] * self.FMcriterion(fake_features[i], real_features[i])
+            for i in range(len(real_features_VGG)):
+                loss_G_VGG_FM += weights[i] * self.FMcriterion(fake_features_VGG[i], real_features_VGG[i])
             loss_G += loss_G_VGG_FM * self.opt.lambda_FM
 
         return loss_D, loss_G, target, fake
