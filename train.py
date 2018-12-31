@@ -2,11 +2,12 @@ if __name__ == '__main__':
     import os
     os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
     import torch
+    from networks import Discriminator, Generator, Loss
     from option import TrainOption
     from pipeline import CustomDataset
-    from networks import Generator, Discriminator, Loss
-    from utils import weights_init, update_lr, Manager
+    from utils import Manager, update_lr, weights_init
     import datetime
+
 
     opt = TrainOption().parse()
     lr = opt.lr
@@ -19,9 +20,6 @@ if __name__ == '__main__':
 
     G = Generator(opt).apply(weights_init)
     D = Discriminator(opt).apply(weights_init)
-
-    print("G param", sum(p.numel() for p in G.parameters() if p.requires_grad))
-    print("D param", sum(p.numel() for p in D.parameters() if p.requires_grad))
 
     if USE_CUDA:
         G = G.cuda(opt.gpu_ids)
@@ -44,6 +42,7 @@ if __name__ == '__main__':
             if USE_CUDA:
                 input = input.cuda(opt.gpu_ids)
                 target = target.cuda(opt.gpu_ids)
+
             D_loss, G_loss, target_tensor, generated_tensor = criterion(D, G, input, target)
 
             D_optim.zero_grad()
