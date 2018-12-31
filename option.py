@@ -66,5 +66,3 @@ class TestOption(BaseOption):
 
         self.parser.add_argument('--shuffle', action='store_true', default=False,
                                  help='if you want to shuffle the order')
-
-
