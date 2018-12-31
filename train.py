@@ -8,6 +8,7 @@ if __name__ == '__main__':
     from utils import Manager, update_lr, weights_init
     import datetime
 
+    torch.backends.cudnn.benchmark = True
 
     opt = TrainOption().parse()
     lr = opt.lr
@@ -45,13 +46,13 @@ if __name__ == '__main__':
 
             D_loss, G_loss, target_tensor, generated_tensor = criterion(D, G, input, target)
 
-            D_optim.zero_grad()
-            D_loss.backward()
-            D_optim.step()
-
             G_optim.zero_grad()
             G_loss.backward()
             G_optim.step()
+
+            D_optim.zero_grad()
+            D_loss.backward()
+            D_optim.step()
 
             package = {'Epoch': epoch,
                        'current_step': current_step,
