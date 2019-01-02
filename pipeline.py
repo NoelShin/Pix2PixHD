@@ -26,10 +26,18 @@ class CustomDataset(torch.utils.data.Dataset):
                     glob.glob(os.path.join(dataset_dir, 'Test', 'Input', 'InstanceMap', '*.' + format)))
                 self.target_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Test', 'Target', '*.' + format)))
 
+        elif opt.dataset_name == 'Custom':
+            if opt.is_train:
+                self.label_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Train', 'Input', 'LabelMap', '*.' + format)))
+                self.target_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Train', 'Target', '*.' + format)))
+
+            elif not opt.is_train:
+                self.label_path_list = sorted(
+                    glob.glob(os.path.join(dataset_dir, 'Test', 'Input', 'LabelMap', '*.' + format)))
+                self.target_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Test', 'Target', '*.' + format)))
+
         else:
-            """
-            for other datasets
-            """
+            raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'Custom'].")
 
     def get_transform(self, normalize=True):
         transform_list = []
@@ -37,10 +45,8 @@ class CustomDataset(torch.utils.data.Dataset):
         if self.opt.half:
             transform_list += [transforms.Resize(self.opt.image_size, interpolation=Image.NEAREST)]
 
-        if self.opt.is_train and self.opt.flip:
-            coin = random.random() > 0.5
-            if coin:
-                transform_list.append(transforms.Lambda(lambda x: self.__flip(x)))
+        if self.opt.is_train and self.coin:
+            transform_list.append(transforms.Lambda(lambda x: self.__flip(x)))
 
         transform_list.append(transforms.ToTensor())
 
@@ -77,13 +83,13 @@ class CustomDataset(torch.utils.data.Dataset):
 
             return input_tensor
 
-        else:
-            """
-            for other dataset
-            """
+        elif self.opt.dataset_name == 'Custom':
+            return label_tensor
 
     def __getitem__(self, index):
         if self.opt.dataset_name == 'Cityscapes':
+            if self.opt.flip:
+                self.coin = random.random() > 0.5
 
             label_array = Image.open(self.label_path_list[index])
             label_tensor = self.get_transform(normalize=False)(label_array) * 255.0
@@ -96,12 +102,19 @@ class CustomDataset(torch.utils.data.Dataset):
 
             input_tensor = self.encode_input(label_tensor, instance_tensor)
 
-            return input_tensor, target_tensor
+        elif self.opt.dataset_name == 'Custom':
+            label_array = Image.open(self.label_path_list[index])
+            label_tensor = self.get_transform(normalize=True)(label_array)
+
+            target_array = Image.open(self.target_path_list[index])
+            target_tensor = self.get_transform(normalize=True)(target_array)
+
+            input_tensor = self.encode_input(label_tensor)
 
         else:
-            """
-            for other dataset
-            """
+            raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'Custom'].")
+
+        return input_tensor, target_tensor
 
     def __len__(self):
         return len(self.label_path_list)
