@@ -21,7 +21,7 @@ class Generator(nn.Module):
         pad = get_pad_layer(self.opt.padding_type)
 
         model = []
-        model += [pad(3), nn.Conv2d(input_ch, n_gf, kernel_size=7, padding=0), act]
+        model += [pad(3), nn.Conv2d(input_ch, n_gf, kernel_size=7, padding=0), norm(n_gf), act]
 
         for _ in range(self.opt.n_downsample):
             model += [nn.Conv2d(n_gf, 2 * n_gf, kernel_size=3, padding=1, stride=2), norm(2 * n_gf), act]
@@ -103,7 +103,7 @@ class Discriminator(nn.Module):
         result = []
         for i in range(self.opt.n_D):
             result.append(getattr(self, 'Scale_{}'.format(i))(x))
-            x = nn.AvgPool2d(kernel_size=3, padding=1, stride=2)(x)
+            x = nn.AvgPool2d(kernel_size=3, padding=1, stride=2, count_include_pad=False)(x)
 
         return result
 
