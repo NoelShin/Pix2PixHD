@@ -7,9 +7,8 @@ from PIL import Image
 
 
 def configure(opt):
-
+    opt.format = 'png'
     opt.n_df = 64
-
     if opt.dataset_name == 'Cityscapes':
         if opt.use_boundary_map:
             opt.input_ch = 36
@@ -17,7 +16,6 @@ def configure(opt):
         else:
             opt.input_ch = 35
 
-        opt.format = 'png'
         if opt.image_height == 512:
             opt.half = True
         elif opt.image_height == 1024:
@@ -26,8 +24,19 @@ def configure(opt):
         opt.n_gf = 64 if opt.half else 32
         opt.output_ch = 3
 
+    elif opt.dataset_name == 'Custom':
+        opt.input_ch = 1
+
+        if opt.image_height == 512:
+            opt.half = True
+        elif opt.image_height == 1024:
+            opt.half = False
+        opt.image_size = (512, 512) if opt.haflp else (1024, 1024)
+        opt.n_gf = 64 if opt.half else 32
+        opt.output_ch = 1
+
     else:
-        raise NotImplementedError("Please check your image_height. It should be in [512, 1024].")
+        raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'Custom'].")
 
     dataset_name = opt.dataset_name
     model_name = model_namer(height=opt.image_height)
@@ -52,7 +61,8 @@ def configure(opt):
 
     if opt.debug:
         opt.display_freq = 1
-        opt.n_epochs = 1
+        opt.epoch_decay = 2
+        opt.n_epochs = 4
         opt.report_freq = 1
         opt.save_freq = 1
 
@@ -80,15 +90,9 @@ def make_dir(dataset_name=None, model_name=None, type='checkpoints'):
     if type == 'checkpoints':
         assert model_name, "model_name keyword should be specified for type='checkpoints'"
         if not os.path.isdir('./checkpoints'):
-            os.mkdir('./checkpoints')
-            os.mkdir(os.path.join('./checkpoints', dataset_name))
-            os.mkdir(os.path.join('./checkpoints', dataset_name, 'Image'))
-            os.mkdir(os.path.join('./checkpoints', dataset_name, 'Image/Training'))
-            os.mkdir(os.path.join('./checkpoints', dataset_name, 'Image/Training', model_name))
-            os.mkdir(os.path.join('./checkpoints', dataset_name, 'Image/Test'))
-            os.mkdir(os.path.join('./checkpoints', dataset_name, 'Image/Test', model_name))
-            os.mkdir(os.path.join('./checkpoints', dataset_name, 'Model'))
-            os.mkdir(os.path.join('./checkpoints', dataset_name, 'Model', model_name))
+            os.makedirs(os.path.join('./checkpoints', dataset_name, 'Image', 'Training', model_name))
+            os.makedirs(os.path.join('./checkpoints', dataset_name, 'Image', 'Test', model_name))
+            os.makedirs(os.path.join('./checkpoints', dataset_name, 'Model', model_name))
 
         elif os.path.isdir('./checkpoints'):
             print("checkpoints directory already exists.")
@@ -158,7 +162,11 @@ class Manager(object):
     def tensor2image(self, image_tensor):
         np_image = image_tensor.squeeze().cpu().float().numpy()
         # assert np_image.shape[0] in [1, 3], print("The channel is ", np_image.shape)
-        np_image = np.transpose(np_image, (1, 2, 0))  # HWC
+        if len(np_image.shape) == 3:
+            np_image = np.transpose(np_image, (1, 2, 0))  # HWC
+        else:
+            pass
+
         np_image = self.adjust_dynamic_range(np_image, drange_in=[-1., 1.], drange_out=[0, 255])
         np_image = np.clip(np_image, 0, 255).astype(np.uint8)
         return np_image
