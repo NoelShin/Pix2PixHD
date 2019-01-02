@@ -9,7 +9,7 @@ class BaseOption(object):
         self.parser.add_argument('--debug', action='store_true', default=False, help='for checking code')
 
         self.parser.add_argument('--batch_size', type=int, default=1, help='the number of batch_size')
-        self.parser.add_argument('--dataset_name', type=str, default='Cityscapes', help='[Cityscapes]')
+        self.parser.add_argument('--dataset_name', type=str, default='Cityscapes', help='[Cityscapes, Custom]')
         self.parser.add_argument('--gpu_ids', type=int, default=2, help='gpu number. If -1, use cpu')
         self.parser.add_argument('--image_height', type=int, default=512, help='[512, 1024]')
         self.parser.add_argument('--image_mode', type=str, default='png', help='extension for saving image')
