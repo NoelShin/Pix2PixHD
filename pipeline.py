@@ -26,18 +26,18 @@ class CustomDataset(torch.utils.data.Dataset):
                     glob.glob(os.path.join(dataset_dir, 'Test', 'Input', 'InstanceMap', '*.' + format)))
                 self.target_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Test', 'Target', '*.' + format)))
 
-        elif opt.dataset_name == 'Custom':
+        elif opt.dataset_name == 'HMI2AIA304':
             if opt.is_train:
-                self.label_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Train', 'Input', 'LabelMap', '*.' + format)))
+                self.label_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Train', 'Input', '*.' + format)))
                 self.target_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Train', 'Target', '*.' + format)))
 
             elif not opt.is_train:
                 self.label_path_list = sorted(
-                    glob.glob(os.path.join(dataset_dir, 'Test', 'Input', 'LabelMap', '*.' + format)))
+                    glob.glob(os.path.join(dataset_dir, 'Test', 'Input', '*.' + format)))
                 self.target_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Test', 'Target', '*.' + format)))
 
         else:
-            raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'Custom'].")
+            raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'HMI2AIA304'].")
 
     def get_transform(self, normalize=True):
         transform_list = []
@@ -83,8 +83,11 @@ class CustomDataset(torch.utils.data.Dataset):
 
             return input_tensor
 
-        elif self.opt.dataset_name == 'Custom':
+        elif self.opt.dataset_name == 'HMI2AIA304':
             return label_tensor
+
+        else:
+            raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'HMI2AIA304'].")
 
     def __getitem__(self, index):
         if self.opt.dataset_name == 'Cityscapes':
@@ -102,7 +105,8 @@ class CustomDataset(torch.utils.data.Dataset):
 
             input_tensor = self.encode_input(label_tensor, instance_tensor)
 
-        elif self.opt.dataset_name == 'Custom':
+        elif self.opt.dataset_name == 'HMI2AIA304':
+            self.coin= None
             label_array = Image.open(self.label_path_list[index])
             label_tensor = self.get_transform(normalize=True)(label_array)
 
@@ -112,7 +116,7 @@ class CustomDataset(torch.utils.data.Dataset):
             input_tensor = self.encode_input(label_tensor)
 
         else:
-            raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'Custom'].")
+            raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'HMI2AIA304'].")
 
         return input_tensor, target_tensor
 
