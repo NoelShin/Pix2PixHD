@@ -24,19 +24,20 @@ def configure(opt):
         opt.n_gf = 64 if opt.half else 32
         opt.output_ch = 3
 
-    elif opt.dataset_name == 'Custom':
+    elif opt.dataset_name == 'HMI2AIA304':
         opt.input_ch = 1
-
+        opt.flip = False
+        opt.VGG_loss = False
         if opt.image_height == 512:
             opt.half = True
         elif opt.image_height == 1024:
             opt.half = False
-        opt.image_size = (512, 512) if opt.haflp else (1024, 1024)
+        opt.image_size = (512, 512) if opt.half else (1024, 1024)
         opt.n_gf = 64 if opt.half else 32
         opt.output_ch = 1
 
     else:
-        raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'Custom'].")
+        raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'HMI2AIA304'].")
 
     dataset_name = opt.dataset_name
     model_name = model_namer(height=opt.image_height)
@@ -49,11 +50,11 @@ def configure(opt):
         opt.image_dir = os.path.join('./checkpoints', dataset_name, 'Image/Test', model_name)
 
     opt.model_dir = os.path.join('./checkpoints', dataset_name, 'Model', model_name)
-    log_path = os.path.join('./checkpoints/', dataset_name, 'Model', model_name + '_opt.txt')
+    log_path = os.path.join('./checkpoints/', dataset_name, 'Model', model_name, 'opt.txt')
 
     if os.path.isfile(log_path):
         permission = input(
-            "{} log already exists. Do you really want to overwrite this log? Y/N. : ".format(model_name + '_opt'))
+            "{} log already exists. Do you really want to overwrite this log? Y/N. : ".format(model_name + '/opt'))
         if permission == 'Y':
             pass
         else:
@@ -86,10 +87,10 @@ def model_namer(**elements):
 
 
 def make_dir(dataset_name=None, model_name=None, type='checkpoints'):
-    assert dataset_name in ['Cityscapes']
+    assert dataset_name in ['Cityscapes', 'HMI2AIA304']
     if type == 'checkpoints':
         assert model_name, "model_name keyword should be specified for type='checkpoints'"
-        if not os.path.isdir('./checkpoints'):
+        if not os.path.isdir(os.path.join('./checkpoints', dataset_name)):
             os.makedirs(os.path.join('./checkpoints', dataset_name, 'Image', 'Training', model_name))
             os.makedirs(os.path.join('./checkpoints', dataset_name, 'Image', 'Test', model_name))
             os.makedirs(os.path.join('./checkpoints', dataset_name, 'Model', model_name))
@@ -161,7 +162,6 @@ class Manager(object):
 
     def tensor2image(self, image_tensor):
         np_image = image_tensor.squeeze().cpu().float().numpy()
-        # assert np_image.shape[0] in [1, 3], print("The channel is ", np_image.shape)
         if len(np_image.shape) == 3:
             np_image = np.transpose(np_image, (1, 2, 0))  # HWC
         else:
