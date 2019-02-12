@@ -26,7 +26,7 @@ class CustomDataset(torch.utils.data.Dataset):
                     glob.glob(os.path.join(dataset_dir, 'Test', 'Input', 'InstanceMap', '*.' + format)))
                 self.target_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Test', 'Target', '*.' + format)))
 
-        elif opt.dataset_name == 'HMI2AIA304':
+        else:
             if opt.is_train:
                 self.label_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Train', 'Input', '*.' + format)))
                 self.target_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Train', 'Target', '*.' + format)))
@@ -35,9 +35,6 @@ class CustomDataset(torch.utils.data.Dataset):
                 self.label_path_list = sorted(
                     glob.glob(os.path.join(dataset_dir, 'Test', 'Input', '*.' + format)))
                 self.target_path_list = sorted(glob.glob(os.path.join(dataset_dir, 'Test', 'Target', '*.' + format)))
-
-        else:
-            raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'HMI2AIA304'].")
 
     def get_transform(self, normalize=True):
         transform_list = []
