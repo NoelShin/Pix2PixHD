@@ -24,7 +24,7 @@ def configure(opt):
         opt.n_gf = 64 if opt.half else 32
         opt.output_ch = 3
 
-    elif opt.dataset_name == 'HMI2AIA304':
+    else:
         opt.input_ch = 1
         opt.flip = False
         opt.VGG_loss = False
@@ -35,9 +35,6 @@ def configure(opt):
         opt.image_size = (512, 512) if opt.half else (1024, 1024)
         opt.n_gf = 64 if opt.half else 32
         opt.output_ch = 1
-
-    else:
-        raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'HMI2AIA304'].")
 
     dataset_name = opt.dataset_name
     model_name = model_namer(height=opt.image_height)
