@@ -24,13 +24,10 @@ if __name__ == '__main__':
 
     for path_G in list_G:
         G.load_state_dict(torch.load(path_G))
-
-        if USE_CUDA:
-            G = G.cuda()
+        G = G.cuda() if USE_CUDA else G
 
         for i, input in enumerate(data_loader):
-            if USE_CUDA:
-                input = input.cuda()
+            input = input.cuda() if USE_CUDA else input
             fake = G(input)
             save_image(fake.detach(), os.path.join(opt.image_dir, 'Result_{}'.format(i)))
             print('{}/{} [{:.{prec}}%] has done.'.format(i + 1, len(data_loader), (i + 1)/len(data_loader)*100,
