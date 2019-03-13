@@ -1,2 +1,2 @@
 # Pix2PixHD
-Simple implementation of Pix2PixHD with PyTorch
+Simple PyTorch implementation of Pix2PixHD global generator
