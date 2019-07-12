@@ -11,20 +11,18 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = True
 
     opt = TrainOption().parse()
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(opt.gpu_ids)
+    
+    DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
     lr = opt.lr
-    USE_CUDA = True if opt.gpu_ids != -1 else False
     dataset = CustomDataset(opt)
     data_loader = torch.utils.data.DataLoader(dataset=dataset,
                                               batch_size=opt.batch_size,
                                               num_workers=opt.n_workers,
                                               shuffle=opt.shuffle)
 
-    G = Generator(opt).apply(weights_init)
-    D = Discriminator(opt).apply(weights_init)
-
-    if USE_CUDA:
-        G = G.cuda(opt.gpu_ids)
-        D = D.cuda(opt.gpu_ids)
+    G = Generator(opt).apply(weights_init).to(DEVICE)
+    D = Discriminator(opt).apply(weights_init).to(DEVICE)
 
     criterion = Loss(opt)
 
@@ -39,10 +37,8 @@ if __name__ == '__main__':
     for epoch in range(1, opt.n_epochs + 1):
         for _, (input, target) in enumerate(data_loader):
             current_step += 1
-
-            if USE_CUDA:
-                input = input.cuda(opt.gpu_ids)
-                target = target.cuda(opt.gpu_ids)
+            
+            input, target = input.to(DEVICE), target.to(DEVICE)
 
             D_loss, G_loss, target_tensor, generated_tensor = criterion(D, G, input, target)
 
