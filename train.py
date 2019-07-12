@@ -70,6 +70,6 @@ if __name__ == '__main__':
                 break
 
         if epoch > opt.epoch_decay:
-            lr = update_lr(lr, opt.n_epochs - opt.epoch_decay, D_optim, G_optim)
+            lr = update_lr(opt.lr, lr, opt.n_epochs - opt.epoch_decay, D_optim, G_optim)
 
     print("Total time taken: ", datetime.datetime.now() - start_time)
