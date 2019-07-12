@@ -84,7 +84,6 @@ def model_namer(**elements):
 
 
 def make_dir(dataset_name=None, model_name=None, type='checkpoints'):
-    assert dataset_name in ['Cityscapes', 'HMI2AIA304']
     if type == 'checkpoints':
         assert model_name, "model_name keyword should be specified for type='checkpoints'"
         if not os.path.isdir(os.path.join('./checkpoints', dataset_name)):
