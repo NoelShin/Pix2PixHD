@@ -146,8 +146,7 @@ class Manager(object):
     def report_loss(package):
         print("Epoch: {} [{:.{prec}}%] Current_step: {} D_loss: {:.{prec}}  G_loss: {:.{prec}}"
               .format(package['Epoch'],
-                      package['current_step'],
-                      package['total_step'] * 100,
+                      package['current_step'] / package['total_step'] * 100,
                       package['current_step'],
                       package['D_loss'],
                       package['G_loss'],
@@ -208,15 +207,14 @@ def update_lr(init_lr, old_lr, n_epoch_decay, *optims):
             param_group['lr'] = new_lr
 
     print("Learning rate has been updated from {} to {}.".format(old_lr, new_lr))
-
     return new_lr
 
 
 def weights_init(module):
     classname = module.__class__.__name__
     if classname.find('Conv') != -1:
-        module.weight.normal_(0.0, 0.02)
+        module.weight.detach().normal_(0.0, 0.02)
 
     elif classname.find('BatchNorm2d') != -1:
-        module.weight.normal(1.0, 0.02)
-        module.bias.fill_(0.0)
+        module.weight.detach().normal(1.0, 0.02)
+        module.bias.detach().fill_(0.0)
