@@ -163,6 +163,8 @@ class Loss(object):
                 if opt.gpu_ids != -1:
                     self.VGGNet = self.VGGNet.cuda(opt.gpu_ids)
 
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
+
     def __call__(self, D, G, input, target):
         loss_D = 0
         loss_G = 0
@@ -170,29 +172,24 @@ class Loss(object):
 
         fake = G(input)
 
-        real_features = D(torch.cat([input, target], dim=1))
-        fake_features = D(torch.cat([input, fake.detach()], dim=1))
+        real_features = D(torch.cat((input, target), dim=1))
+        fake_features = D(torch.cat((input, fake.detach()), dim=1))
 
         for i in range(self.opt.n_D):
-            real_grid = get_grid(real_features[i][-1], is_real=True)
-            fake_grid = get_grid(fake_features[i][-1], is_real=False)  # it doesn't need to be fake_features
-
-            if self.opt.gpu_ids != -1:
-                real_grid = real_grid.cuda(self.opt.gpu_ids)
-                fake_grid = fake_grid.cuda(self.opt.gpu_ids)
+            real_grid = get_grid(real_features[i][-1], is_real=True).to(self.device)
+            fake_grid = get_grid(fake_features[i][-1], is_real=False).to(self.device)  # it doesn't need to be fake_features
 
             loss_D += (self.criterion(real_features[i][-1], real_grid) +
                        self.criterion(fake_features[i][-1], fake_grid)) * 0.5
 
-        fake_features = D(torch.cat([input, fake], dim=1))
+        fake_features = D(torch.cat((input, fake), dim=1))
 
         for i in range(self.opt.n_D):
             for j in range(len(fake_features[0])):
                 loss_G_FM += self.FMcriterion(fake_features[i][j], real_features[i][j].detach())
 
-            real_grid = get_grid(fake_features[i][-1], is_real=True)
-            if self.opt.gpu_ids != -1:
-                real_grid = real_grid.cuda(self.opt.gpu_ids)
+            real_grid = get_grid(fake_features[i][-1], is_real=True).to(self.device)
+
             loss_G += self.criterion(fake_features[i][-1], real_grid)
 
         loss_G += loss_G_FM * (1.0/self.opt.n_D) * self.opt.lambda_FM
