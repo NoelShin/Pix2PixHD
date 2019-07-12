@@ -215,8 +215,8 @@ def update_lr(init_lr, old_lr, n_epoch_decay, *optims):
 def weights_init(module):
     classname = module.__class__.__name__
     if classname.find('Conv') != -1:
-        module.weight.detach().normal_(0.0, 0.02)
+        module.weight.normal_(0.0, 0.02)
 
     elif classname.find('BatchNorm2d') != -1:
-        module.weight.detach().normal(1.0, 0.02)
-        module.bias.detach().fill_(0.0)
+        module.weight.normal(1.0, 0.02)
+        module.bias.fill_(0.0)
