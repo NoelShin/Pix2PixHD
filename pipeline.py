@@ -80,11 +80,8 @@ class CustomDataset(torch.utils.data.Dataset):
 
             return input_tensor
 
-        elif self.opt.dataset_name == 'HMI2AIA304':
-            return label_tensor
-
         else:
-            raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'HMI2AIA304'].")
+            return label_tensor
 
     def __getitem__(self, index):
         if self.opt.dataset_name == 'Cityscapes':
@@ -102,7 +99,7 @@ class CustomDataset(torch.utils.data.Dataset):
 
             input_tensor = self.encode_input(label_tensor, instance_tensor)
 
-        elif self.opt.dataset_name == 'HMI2AIA304':
+        else:
             self.coin= None
             label_array = Image.open(self.label_path_list[index])
             label_tensor = self.get_transform(normalize=True)(label_array)
@@ -111,9 +108,6 @@ class CustomDataset(torch.utils.data.Dataset):
             target_tensor = self.get_transform(normalize=True)(target_array)
 
             input_tensor = self.encode_input(label_tensor)
-
-        else:
-            raise NotImplementedError("Please check dataset_name. It should be in ['Cityscapes', 'HMI2AIA304'].")
 
         return input_tensor, target_tensor
 
