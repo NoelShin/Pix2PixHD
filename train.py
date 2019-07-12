@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
         if epoch % opt.epoch_save == 0:
             torch.save(G.state_dict(), os.path.join(test_opt.model_dir, "{:d}_G.pt".format(epoch)))
-            torch.save(D.state_dict(), test_opt.model_dir, "{:d}_D.pt".format(epoch))
+            torch.save(D.state_dict(), os.path.join(test_opt.model_dir, "{:d}_D.pt".format(epoch)))
 
             image_dir = os.path.join(test_opt.image_dir, "{:d}".format(epoch))
             os.makedirs(image_dir, exist_ok=True)
