@@ -195,17 +195,15 @@ class Manager(object):
 
         if package['current_step'] % self.opt.save_freq == 0:
             self.save(package, model=True)
+            
 
-
-def update_lr(old_lr, n_epoch_decay, D_optim, G_optim):
-    delta_lr = old_lr/n_epoch_decay
+def update_lr(init_lr, old_lr, n_epoch_decay, *optims):
+    delta_lr = init_lr / n_epoch_decay
     new_lr = old_lr - delta_lr
 
-    for param_group in D_optim.param_groups:
-        param_group['lr'] = new_lr
-
-    for param_group in G_optim.param_groups:
-        param_group['lr'] = new_lr
+    for optim in optims:
+        for param_group in optim.param_groups:
+            param_group['lr'] = new_lr
 
     print("Learning rate has been updated from {} to {}.".format(old_lr, new_lr))
 
