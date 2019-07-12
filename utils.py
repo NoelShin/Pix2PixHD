@@ -49,7 +49,7 @@ def configure(opt):
     opt.model_dir = os.path.join('./checkpoints', dataset_name, 'Model', model_name)
     log_path = os.path.join('./checkpoints/', dataset_name, 'Model', model_name, 'opt.txt')
 
-    if os.path.isfile(log_path):
+    if os.path.isfile(log_path) and opt.is_train:
         permission = input(
             "{} log already exists. Do you really want to overwrite this log? Y/N. : ".format(model_name + '/opt'))
         if permission == 'Y':
@@ -132,7 +132,8 @@ def get_pad_layer(type):
         layer = nn.ZeroPad2d
 
     else:
-        raise NotImplementedError("Padding type {} is not valid. Please choose among ['reflection', 'replication', 'zero']".format(type))
+        raise NotImplementedError(
+            "Padding type {} is not valid. Please choose among ['reflection', 'replication', 'zero']".format(type))
 
     return layer
 
@@ -143,15 +144,20 @@ class Manager(object):
 
     @staticmethod
     def report_loss(package):
-        print("Epoch: {} [{:.{prec}}%] Current_step: {} D_loss: {:.{prec}}  G_loss: {:.{prec}}".format(package['Epoch'],
-                                                package['current_step']/package['total_step']*100,
-                                                package['current_step'], package['D_loss'], package['G_loss'], prec=4))
+        print("Epoch: {} [{:.{prec}}%] Current_step: {} D_loss: {:.{prec}}  G_loss: {:.{prec}}"
+              .format(package['Epoch'],
+                      package['current_step'],
+                      package['total_step'] * 100,
+                      package['current_step'],
+                      package['D_loss'],
+                      package['G_loss'],
+                      prec=4))
 
     @staticmethod
     def adjust_dynamic_range(data, drange_in, drange_out):
         if drange_in != drange_out:
             scale = (np.float32(drange_out[1]) - np.float32(drange_out[0])) / (
-                        np.float32(drange_in[1]) - np.float32(drange_in[0]))
+                    np.float32(drange_in[1]) - np.float32(drange_in[0]))
             bias = (np.float32(drange_out[0]) - np.float32(drange_in[0]) * scale)
             data = data * scale + bias
         return data
@@ -186,15 +192,12 @@ class Manager(object):
             torch.save(package['G_state_dict'], path_G)
 
     def __call__(self, package):
-        if package['current_step'] % self.opt.display_freq == 0:
+        if package['current_step'] % self.opt.iter_display == 0:
             self.save(package, image=True)
 
-        if package['current_step'] % self.opt.report_freq == 0:
+        if package['current_step'] % self.opt.iter_report == 0:
             self.report_loss(package)
 
-        if package['current_step'] % self.opt.save_freq == 0:
-            self.save(package, model=True)
-            
 
 def update_lr(init_lr, old_lr, n_epoch_decay, *optims):
     delta_lr = init_lr / n_epoch_decay
