@@ -48,7 +48,7 @@ class CustomDataset(torch.utils.data.Dataset):
         transform_list.append(transforms.ToTensor())
 
         if normalize:
-            transform_list.append(transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)))
+            transform_list.append(transforms.Normalize(mean=[0.5], std=[0.5]))
 
         return transforms.Compose(transform_list)
 
@@ -100,7 +100,7 @@ class CustomDataset(torch.utils.data.Dataset):
             input_tensor = self.encode_input(label_tensor, instance_tensor)
 
         else:
-            self.coin= None
+            self.coin = None
             label_array = Image.open(self.label_path_list[index])
             label_tensor = self.get_transform(normalize=True)(label_array)
 
